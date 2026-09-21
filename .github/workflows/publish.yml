@@ -1,0 +1,58 @@
+# plays.themomentumcompany.com, the Ag Sales Playbook's pages.
+#
+# Nothing here is edited by hand. Every run copies the sign-up page and the
+# audio player from marvinforever/cj-pages (the pages Ani maintains for every
+# brand), makes the Ag Sales Playbook the default, strips Christine's name out
+# of the first paint, and publishes. Change the pages in cj-pages; this site
+# follows within 15 minutes, or at once if you press "Run workflow".
+name: publish
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Copy the pages from cj-pages
+        run: |
+          set -euo pipefail
+          mkdir site
+          B=https://raw.githubusercontent.com/marvinforever/cj-pages/main
+          for f in joined.html player.html 404.html; do curl -fsSL "$B/$f" -o "site/$f"; done
+          cd site
+          for f in joined.html player.html 404.html; do
+            sed -i \
+              -e 's/q\.get("b")||"cj"/q.get("b")||"ag"/' \
+              -e 's/The Daily Whisper/The Ag Sales Playbook/g' \
+              -e 's/Christine Jewell/Mark Jewell/g' \
+              -e 's/id="sig">Christine</id="sig">Mark</' \
+              -e 's#https://go\.thechristinejewell\.com#https://plays.themomentumcompany.com/#g' \
+              "$f"
+          done
+          cp joined.html index.html
+          # Refuse to publish if the copy did not take: better a stale site than
+          # Christine's page on Mark's address.
+          grep -q 'q.get("b")||"ag"' index.html
+          if grep -Eq '>Christine|Christine Jewell|thechristinejewell' index.html player.html 404.html; then
+            echo "Christine's name survived the copy; not publishing."; exit 1
+          fi
+          echo plays.themomentumcompany.com > CNAME
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
