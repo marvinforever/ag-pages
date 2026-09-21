@@ -42,7 +42,7 @@ jobs:
               -e 's#https://go\.thechristinejewell\.com#https://plays.themomentumcompany.com/#g' \
               -e 's/Your next morning is on its way/Your next play is on its way/g' \
               -e 's/The mornings arrive by text/The plays arrive by text/g' \
-              -e 's/Ten mornings, about ten minutes each, by text/10 plays, about 10 minutes each, one every workday by text/g' \
+              -e 's/Ten mornings, about ten minutes each, by text/Short audio plays by text, one each workday/g' \
               "$f"
           done
           cp joined.html index.html
